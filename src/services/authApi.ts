@@ -7,7 +7,7 @@ import {
   GeneratePasswordsResponse 
 } from '../types/auth';
 
-const API_BASE_URL = 'http://localhost:6600';
+const API_BASE_URL = 'https://v1hwz15p-6700.inc1.devtunnels.ms';
 
 // Token storage keys
 const TOKEN_KEY = 'authToken';
