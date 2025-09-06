@@ -36,7 +36,7 @@ export const PreviewAudioPlayer: React.FC<PreviewAudioPlayerProps> = ({
   const [hasReachedLimit, setHasReachedLimit] = useState(false);
 
   // Preview URL - replace with actual preview endpoint
-  const previewUrl = `http://localhost:6600/api/preview/${sid}`;
+  const previewUrl = `https://v1hwz15p-6700.inc1.devtunnels.ms/api/preview/${sid}`;
 
   // Audio event handlers
   const handlePlay = useCallback(() => setIsPlaying(true), []);
