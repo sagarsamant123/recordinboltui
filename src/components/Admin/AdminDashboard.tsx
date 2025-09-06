@@ -30,12 +30,20 @@ export const AdminDashboard: React.FC = () => {
   const [showPasswords, setShowPasswords] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedEmails, setCopiedEmails] = useState<Set<string>>(new Set());
+  const [hasFetched, setHasFetched] = useState(false);
   
   const { isAuthenticated, isAdmin, logout, user } = useAuth();
   const navigate = useNavigate();
 
-  const doFetchRequests = useCallback(async () => {
+  const doFetchRequests = useCallback(async (force = false) => {
+    // Prevent multiple simultaneous calls unless forced
+    if (!force && (loading || hasFetched)) {
+      console.log('Skipping fetch - already loading or fetched');
+      return;
+    }
+
     if (!isAuthenticated || !isAdmin) {
+      console.log('Not authenticated or not admin, skipping fetch');
       return;
     }
 
@@ -48,6 +56,7 @@ export const AdminDashboard: React.FC = () => {
       console.log('API Response:', response);
       if (response.success) {
         setRequests(response.requests);
+        setHasFetched(true);
       } else {
         setError('Failed to load access requests');
       }
@@ -56,35 +65,26 @@ export const AdminDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, loading, hasFetched]);
 
-  // Only fetch requests once when component mounts and auth is valid
-  useEffect(() => {
-    let mounted = true;
-
-    const initializeData = async () => {
-      if (mounted && isAuthenticated && isAdmin && !loading) {
-        console.log('Initial fetch of requests...');
-        await doFetchRequests();
-      }
-    };
-
-    initializeData();
-
-    return () => {
-      mounted = false;
-    };
-  }, []); // Empty dependency array to run only once
-
-  // Handle auth state changes
+  // Handle auth state changes first
   useEffect(() => {
     if (!isAuthenticated) {
+      console.log('Not authenticated, redirecting to login');
       navigate('/login');
     } else if (!isAdmin) {
+      console.log('Not admin, redirecting to home');
       navigate('/');
     }
   }, [isAuthenticated, isAdmin, navigate]);
 
+  // Fetch data only after auth is confirmed
+  useEffect(() => {
+    if (isAuthenticated && isAdmin && !hasFetched && !loading) {
+      console.log('Initial fetch of requests...');
+      doFetchRequests();
+    }
+  }, [isAuthenticated, isAdmin, hasFetched, loading, doFetchRequests]);
 
   const handleSelectRequest = (requestId: string) => {
     const newSelected = new Set(selectedRequests);
@@ -123,7 +123,7 @@ export const AdminDashboard: React.FC = () => {
         setShowPasswords(true);
         setSelectedRequests(new Set());
         // Refresh requests to update status
-        await doFetchRequests();
+        await doFetchRequests(true); // Force refresh
       } else {
         setError(response.message || 'Failed to generate passwords');
       }
@@ -134,6 +134,10 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleRefresh = useCallback(() => {
+    setHasFetched(false);
+    doFetchRequests(true);
+  }, [doFetchRequests]);
   const copyToClipboard = async (text: string, email: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -249,7 +253,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex items-center gap-4">
                 <h2 className="text-lg font-semibold text-gray-900">Access Requests</h2>
                 <button
-                  onClick={doFetchRequests}
+                  onClick={handleRefresh}
                   disabled={loading}
                   className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
                 >
@@ -293,7 +297,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
           ) : error ? (
             <div className="p-6">
-              <ErrorMessage message={error} onRetry={doFetchRequests} />
+              <ErrorMessage message={error} onRetry={handleRefresh} />
             </div>
           ) : requests.length === 0 ? (
             <div className="text-center py-12">

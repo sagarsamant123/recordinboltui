@@ -9,18 +9,18 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
+  const [hasRedirected, setHasRedirected] = useState(false);
   const { login, isLoading, error, isAuthenticated, isAdmin, clearError } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
-      // Only redirect if we're authenticated and not in a loading state
-      if (isAuthenticated && !isLoading) {
-        console.log('Auth state in LoginPage:', { isAuthenticated, isAdmin, isLoading });
-        
-        // Small delay to ensure auth state is fully updated
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+    // Only redirect once when authenticated and not loading
+    if (isAuthenticated && !isLoading && !hasRedirected) {
+      console.log('Auth state in LoginPage:', { isAuthenticated, isAdmin, isLoading });
+      setHasRedirected(true);
+      
+      // Use setTimeout to ensure state updates are complete
+      setTimeout(() => {
         if (isAdmin) {
           console.log('Redirecting to admin dashboard...');
           navigate('/admin', { replace: true });
@@ -28,14 +28,24 @@ export const LoginPage: React.FC = () => {
           console.log('Redirecting to home...');
           navigate('/', { replace: true });
         }
+      }, 100);
+    }
+  }, [isAuthenticated, isAdmin, isLoading, navigate, hasRedirected]);
+
+  // Reset redirect flag when auth state changes to false
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setHasRedirected(false);
+    }
+  }, [isAuthenticated]);
+
+  // Clear error when component mounts
+  useEffect(() => {
+    return () => {
+      if (clearError) {
+        clearError();
       }
     };
-
-    checkAuthAndRedirect();
-  }, [isAuthenticated, isAdmin, isLoading, navigate]);
-
-  useEffect(() => {
-    clearError();
   }, [clearError]);
 
   const validateForm = () => {

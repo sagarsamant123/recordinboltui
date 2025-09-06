@@ -11,6 +11,8 @@ interface UseAudioDataReturn {
   totalRecordings: number;
 }
 
+// Prevent multiple simultaneous fetches
+let isFetching = false;
 /**
  * Enhanced hook for fetching and managing audio data with caching and error recovery
  */
@@ -18,8 +20,16 @@ export const useAudioData = (): UseAudioDataReturn => {
   const [groups, setGroups] = useState<GroupData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
 
-  const fetchAudioData = useCallback(async () => {
+  const fetchAudioData = useCallback(async (force = false) => {
+    // Prevent multiple simultaneous calls unless forced
+    if (!force && (isFetching || hasFetched)) {
+      console.log('Skipping audio data fetch - already fetching or fetched');
+      return;
+    }
+
+    isFetching = true;
     try {
       setLoading(true);
       setError(null);
@@ -36,6 +46,7 @@ export const useAudioData = (): UseAudioDataReturn => {
         });
         
         setGroups(groupsArray);
+        setHasFetched(true);
       } else {
         throw new Error('Invalid response format');
       }
@@ -53,15 +64,19 @@ export const useAudioData = (): UseAudioDataReturn => {
       console.error('Error fetching audio data:', err);
     } finally {
       setLoading(false);
+      isFetching = false;
     }
-  }, []);
+  }, [hasFetched]);
 
-  const refetch = useCallback(async () => {
-    await fetchAudioData();
+  const refetch = useCallback(async (force = true) => {
+    setHasFetched(false);
+    await fetchAudioData(force);
   }, [fetchAudioData]);
 
   useEffect(() => {
-    fetchAudioData();
+    if (!hasFetched && !isFetching) {
+      fetchAudioData();
+    }
   }, [fetchAudioData]);
 
   const totalRecordings = groups.reduce((sum, group) => sum + group.sid_info.length, 0);

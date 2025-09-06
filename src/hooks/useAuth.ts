@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AuthState, User, LoginCredentials, SignupRequestData, AuthResponse } from '../types/auth';
 import { authApi } from '../services/authApi';
 
+// Prevent multiple simultaneous auth initializations
+let isInitializing = false;
+
 export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -13,7 +16,11 @@ export const useAuth = () => {
 
   // Initialize auth state from localStorage
   useEffect(() => {
+    // Prevent multiple initialization calls
+    if (isInitializing) return;
+    
     const initializeAuth = () => {
+      isInitializing = true;
       try {
         const token = authApi.getStoredToken();
         const userData = authApi.getStoredUser();
@@ -68,6 +75,8 @@ export const useAuth = () => {
           token: null,
           error: 'Failed to initialize authentication' 
         }));
+      } finally {
+        isInitializing = false;
       }
     };
 

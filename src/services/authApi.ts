@@ -15,6 +15,7 @@ const USER_KEY = 'userData';
 
 class AuthApiService {
   private requestCache: Map<string, { data: any; timestamp: number }> = new Map();
+  private activeRequests: Map<string, Promise<any>> = new Map();
   private readonly CACHE_DURATION = 30000; // 30 seconds
 
   private getCachedData(key: string) {
@@ -202,7 +203,6 @@ class AuthApiService {
     }
   }
 
-  private fetchPromises: Map<string, Promise<any>> = new Map();
 
   async getAccessRequests(): Promise<AccessRequestsResponse> {
     const cacheKey = 'access-requests';
@@ -215,7 +215,7 @@ class AuthApiService {
     }
 
     // Check if there's already a fetch in progress
-    const existingPromise = this.fetchPromises.get(cacheKey);
+    const existingPromise = this.activeRequests.get(cacheKey);
     if (existingPromise) {
       console.log('Using existing fetch promise');
       return existingPromise;
@@ -251,16 +251,16 @@ class AuthApiService {
           return data;
         } finally {
           // Clean up the promise reference
-          this.fetchPromises.delete(cacheKey);
+          this.activeRequests.delete(cacheKey);
         }
       })();
 
       // Store the promise
-      this.fetchPromises.set(cacheKey, fetchPromise);
+      this.activeRequests.set(cacheKey, fetchPromise);
       return fetchPromise;
     } catch (error) {
       console.error('Get access requests error:', error);
-      this.fetchPromises.delete(cacheKey);
+      this.activeRequests.delete(cacheKey);
       return {
         success: false,
         requests: []
@@ -300,6 +300,7 @@ class AuthApiService {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     this.requestCache.clear(); // Clear cache on logout
+    this.activeRequests.clear(); // Clear active requests on logout
   }
 
   getStoredToken(): string | null {
