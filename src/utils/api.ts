@@ -1,6 +1,6 @@
 import { authApi } from '../services/authApi';
 
-const API_BASE_URL = 'http://localhost:6600/api';
+const API_BASE_URL = 'https://v1hwz15p-6700.inc1.devtunnels.ms/api';
 
 // Cache for API responses to improve performance
 const apiCache = new Map<string, { data: any; timestamp: number }>();
