@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mobile-specific optimizations */
+@layer base {
+  html {
+    /* Prevent zoom on input focus on iOS */
+    -webkit-text-size-adjust: 100%;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    /* Prevent horizontal scroll */
+    overflow-x: hidden;
+    /* Support for safe areas on mobile devices */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Ensure inputs don't zoom on mobile */
+  input, select, textarea {
+    font-size: 16px;
+  }
+  
+  /* Better touch targets for mobile */
+  @media (max-width: 768px) {
+    button, a, input, select {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+}
+
+/* Utility classes for mobile responsiveness */
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .mb-safe {
+    margin-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  /* Mobile-specific scrolling improvements */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
